@@ -94,6 +94,14 @@ test/           logic.mjs, browser-check.js
 - Pour ajouter un niveau : une entrée dans `LEVELS` (route, place, temps), et un fichier `src/world/scenes/<id>.js` qui exporte `build({ renderer, level })` et renvoie `ctx.finish({ cars, peds })` (voir `scenes/ville-3.js` : `begin`, `ctx.bays`, `parts`, `makeNpcs`). Lancer ensuite `check([id])` dans le navigateur.
 - Les voitures PNJ suivent un chemin (`closed: true` pour une boucle, sinon elles réapparaissent au départ) ; les piétons font des allers-retours.
 
+## Fiche technique
+
+Résumé de ce que fait le code, tenu à jour à chaque modification : le lire suffit pour vérifier une information sans relire tout le jeu.
+
+- **Voitures** : `assets/models/npc/car-*.glb` (compact, coupe, hatchback, minivan, offroad, pickup, sedan, sport, suv, wagon) chargées par `src/car/model.js`, roues par `rigWheels` ; piétons `proportional_low_poly_man__free_download.glb` (`src/world/npc.js`).
+- **Caméras (C, `src/camera/rig.js`)** : Poursuite (distance 7,4, hauteur 2,9, champ 62°), Proche (5,2 ; 1,7 ; 66°), Haute (9 ; 17 ; 55°).
+- **Sauvegarde** : `parkingmaster.save.v1`.
+
 ## Crédits des modèles 3D
 
 Voitures : Generic passenger car pack par Comrade1280 (Sketchfab, CC-BY 4.0). Piétons : Proportional Low Poly Man par Robin Butler. Voir `assets/models/CREDITS.md`.
