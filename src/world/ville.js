@@ -7,6 +7,7 @@ import { box, circle } from '../gameplay/collision.js';
 import { makeScene, addGround, pave, pad, paint, boundary, pole } from './common.js';
 import { mat, flat, scatter, oakGeos, oakMats, parkedCars } from './kit.js';
 import { T } from './textures.js';
+import { BK, kitMaterials } from './parts.js';
 import { makeNpcs } from './npc.js';
 
 const PALETTE = [['#cdb89d', 'a'], ['#b8c1c9', 'b'], ['#dccfb2', 'c'], ['#a9695d', 'd'], ['#c3c7bb', 'e'], ['#8f9aa5', 'f']];
@@ -61,38 +62,34 @@ export async function build({ renderer }, o = {}) {
   for (const e of o.eastCars || []) cars.push({ type: e.type, x: 4.4, z: e.z, yaw: Math.PI, color: e.color ?? COLORS[Math.floor(rand() * COLORS.length)] });
   colliders.push(...await parkedCars(scene, cars));
 
-  // immeubles
-  const groups = PALETTE.map(() => []), roofs = [], shops = [], awnings = [];
+  // immeubles du kit commun : vitrines à store sur rue, fenêtres en relief, balcons, corniche ; un maillage par matériau
+  const STY = [{ wall: '#cdb89d', style: 'stone' }, { wall: '#b8c1c9', style: 'stucco' }, { wall: '#dccfb2', style: 'stucco', shutter: '#3d5a80' }, { wall: '#a9695d', style: 'brick' }, { wall: '#c3c7bb', style: 'stone' }, { wall: '#8f9aa5', style: 'concrete' }];
+  const kacc = BK.acc(), kmats = kitMaterials({ style: 'stucco', roof: 'gravel' });
+  STY.forEach((o, i) => { kmats['wall_' + i] = kitMaterials(o).wall; });
+  const AWN = ['#9b3a34', '#2b5d8a', '#2f7a4a', '#c98a1a', '#5a3a6a'];
   for (const side of [-1, 1]) {
     for (let z = -96; z < 96;) {
       const w = Math.min(96 - z, 14 + Math.floor(rand() * 5) * 2), d = 16 + Math.floor(rand() * 3) * 2, h = 3.4 * (4 + Math.floor(rand() * 6));
-      const xc = side * (15 + d / 2), zc = z + w / 2, pi = Math.floor(rand() * PALETTE.length);
-      groups[pi].push(buildingGeo(w, h, d).translate(xc, h / 2, zc));
-      roofs.push(new THREE.BoxGeometry(w + 0.2, 0.5, d + 0.2).translate(xc, h + 0.25, zc));
-      const sg = new THREE.PlaneGeometry(w - 1, 3.7); sg.rotateY(side > 0 ? -Math.PI / 2 : Math.PI / 2); sg.translate(side * 14.93, 1.85, zc);
-      const u = sg.attributes.uv; for (let i = 0; i < u.count; i++) u.setX(i, u.getX(i) * (w - 1) / 16);
-      shops.push(sg);
-      awnings.push(new THREE.BoxGeometry(1.1, 0.12, w - 1).translate(side * 14.4, 3.7, zc));
+      const xc = side * (15 + d / 2), zc = z + w / 2, pi = Math.floor(rand() * STY.length);
+      kacc.at(xc, 0, zc, -side * Math.PI / 2).keys({ wall: 'wall_' + pi });
+      BK.building(kacc, { w, d, h, fh: 3.4, gfh: 4, roof: 'flat', shop: ['+z'], door: false, balcony: rand() < 0.5 ? 'alt' : false, shutters: pi === 2, win: [1.3, 1.6], awningColor: AWN[Math.floor(rand() * AWN.length)], rand });
       colliders.push(box(xc, zc, d / 2, w / 2, 0));
       z += w;
     }
   }
-  PALETTE.forEach(([color, key], i) => { if (groups[i].length) { const m = new THREE.Mesh(mergeGeometries(groups[i]), mat(T.facade(color, key), { bump: 0.4, rough: 0.8 })); m.castShadow = true; m.receiveShadow = true; scene.add(m); } });
-  const roof = new THREE.Mesh(mergeGeometries(roofs), mat(T.concrete(), { color: 0x8a8a86 })); roof.castShadow = true; scene.add(roof);
-  scene.add(new THREE.Mesh(mergeGeometries(shops), new THREE.MeshStandardMaterial({ map: T.storefront(), roughness: 0.35, metalness: 0.1 })));
-  const aw = new THREE.Mesh(mergeGeometries(awnings), flat(0x9b3a34)); aw.castShadow = true; scene.add(aw);
-  // bâtiments qui ferment la rue aux deux bouts
-  for (const z of [-103, 103]) { const m = new THREE.Mesh(buildingGeo(60, 30, 14).translate(0, 15, z), mat(T.facade('#b8c1c9', 'b'), { bump: 0.4 })); scene.add(m); colliders.push(box(0, z, 30, 7, 0)); }
-  boundary(colliders, -15, 15, -96, 96);
-
-  // skyline lointaine (décor, sans collision)
-  const sk = [], r2 = rng(5);
+  // bâtiments qui ferment la rue aux deux bouts (façade vers la rue)
+  for (const z of [-103, 103]) { kacc.at(0, 0, z, z < 0 ? 0 : Math.PI).keys({ wall: 'wall_1' }); BK.building(kacc, { w: 60, d: 14, h: 30, fh: 3.4, roof: 'flat', shop: ['+z'], door: false, win: [1.3, 1.6], rand }); colliders.push(box(0, z, 30, 7, 0)); }
+  // skyline lointaine (décor, sans collision) : tours en mur-rideau et bureaux à bandeaux vitrés
+  const r2 = rng(5);
   for (let i = 0; i < 46; i++) {
     const a = r2() * Math.PI * 2, rr = 120 + r2() * 120, w = 14 + r2() * 20, h = 30 + r2() * 70;
     if (Math.abs(Math.sin(a) * rr) < 40 && Math.abs(Math.cos(a) * rr) < 120) continue;
-    sk.push(buildingGeo(w, h, w).translate(Math.cos(a) * rr, h / 2, Math.sin(a) * rr));
+    kacc.at(Math.cos(a) * rr, 0, Math.sin(a) * rr, Math.atan2(-Math.cos(a), -Math.sin(a))).keys({ wall: 'wall_5' });
+    BK.building(kacc, { w, d: w, h, fh: 3.6, gfh: 5, roof: 'flat', facade: r2() < 0.5 ? 'curtain' : 'ribbon', door: false, detail: 1, rand: r2 });
   }
-  scene.add(new THREE.Mesh(mergeGeometries(sk), mat(T.facade('#9aa3ad', 'sky'), { bump: 0.2 })));
+  { const kg = kacc.geometries(); for (const k in kg) { const m = new THREE.Mesh(kg[k], kmats[k] || kmats.trim); m.castShadow = BuildingKit.cast(k); m.receiveShadow = true; scene.add(m); } }
+  boundary(colliders, -15, 15, -96, 96);
+
 
   // lampadaires, arbres d'alignement, bancs, bornes
   const lamp = mergeGeometries([pole(0.09, 6.6), new THREE.BoxGeometry(1.6, 0.1, 0.1).translate(0.7, 6.55, 0), new THREE.BoxGeometry(0.7, 0.14, 0.3).translate(1.45, 6.5, 0)].map((g) => g.index ? g.toNonIndexed() : g));

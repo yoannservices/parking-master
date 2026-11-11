@@ -1,7 +1,7 @@
 /* Ville 5 : la cour du vieux quartier. Ruelle pavée de 4,8 m entre des maisons, porche de 3,6 m, cour intérieure aux places serrées. */
 import * as THREE from 'three';
 import { begin, pad } from '../common.js';
-import { house, lamps, signBoard } from '../parts.js';
+import { BK, kitMaterials, house, lamps, signBoard } from '../parts.js';
 import { mat, flat, scatter, oakGeos, oakMats, pole } from '../kit.js';
 import { T } from '../textures.js';
 
@@ -20,7 +20,8 @@ export async function build({ renderer, level }) {
   row(-8.4, [-14, -2, 10, 22, 34, 46, 54], 11);
   row(6.3, [1.8, 13, 25, 37, 50], 7); row(6.3, [-14, -1.8], 7);
   // porche : une masse de bâtiment au-dessus du passage
-  const arch = new THREE.Mesh(new THREE.BoxGeometry(7, 7.2, 3.6).translate(6.3, 3.3 + 3.6, 0), mat(T.facade('#c9b79c', 'vq1', { shutters: '#3d5a80' }), { bump: 0.5 })); arch.castShadow = true; scene.add(arch);
+  { const acc = BK.acc(); BK.building(acc, { w: 3.6, d: 7, h: 7.2, fh: 3.4, roof: 'gable', rise: 2.2, plinth: false, door: false, faces: ['+z', '-z'], shutters: true, chimney: false, gutters: false, attic: false, win: [1.0, 1.3], rand: Math.random });
+    const arch = BK.group(acc.geometries(), kitMaterials({ style: 'stucco', wall: '#c9b79c', roof: 'tile', shutter: '#3d5a80' })); arch.position.set(6.3, 3.3, 0); arch.rotation.y = Math.PI / 2; scene.add(arch); }
   const under = new THREE.Mesh(new THREE.BoxGeometry(7, 0.2, 3.6).translate(6.3, 3.25, 0), flat(0x3a3530)); scene.add(under);
   // cour : maisons au nord, au sud et à l'est
   house(scene, colliders, { x: 17, z: -14.1, w: 16, d: 8, h: 10.2, yaw: 0, wall: '#e0d2b4', key: 'vq2', style: { shutters: '#7a3b2e' }, roof: 'tile', door: 1.1 });

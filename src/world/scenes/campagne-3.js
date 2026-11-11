@@ -16,7 +16,7 @@ export async function build({ renderer, level }) {
   pad(scene, -19, 19, -8, 24, T.gravel(), { tile: 6, y: 0.04, order: 3, color: 0xd8cdb8 });
   pad(scene, -12, 12, -28, -6, T.concrete(), { tile: 4, y: 0.05, order: 4, color: 0xb9b4a8 });
   // hangar : murs en planches, porte à l'avant, toit en tôle à deux pans
-  const HH = 6.5, planks = mat(T.planks(), { rough: 0.9, bump: 2 });
+  const HH = 6.5, planks = mat(T.planks(), { rough: 0.9, bump: 2 }); planks.side = THREE.DoubleSide;   // pignons vus aussi de l'intérieur du hangar (ils étaient transparents)
   wallRun(scene, colliders, [[-12, -6], [-12, -28], [12, -28], [12, -6]], { kind: 'wood', h: HH, t: 0.4, color: 0xd9b0a0 });
   wallRun(scene, colliders, [[-12, -6], [-3.2, -6]], { kind: 'wood', h: HH, t: 0.4, color: 0xd9b0a0 });
   wallRun(scene, colliders, [[3.2, -6], [12, -6]], { kind: 'wood', h: HH, t: 0.4, color: 0xd9b0a0 });

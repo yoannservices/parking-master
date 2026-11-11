@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { box, circle } from '../gameplay/collision.js';
 import { mat, flat, scatter, scaleUV, rockGeos, bushGeos, bushMat, pole } from './kit.js';
 import { T } from './textures.js';
+import '../../../../assets/building-kit.js';
 
 const ni = (g) => (g.index ? g.toNonIndexed() : g);
 const shade = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
@@ -20,22 +21,31 @@ export function facadeGeo(w, h, d) {
 }
 const roofMat = (kind) => ({ tile: mat(T.roofTile(), { rough: 0.8, bump: 1.5 }), slate: mat(T.roofSlate(), { rough: 0.7 }), tin: mat(T.roofTin(), { rough: 0.5, metal: 0.3 }), snow: mat(T.snow(), { rough: 0.9, color: 0xf0f4fa }) })[kind];
 
-/* Maison / chalet / hangar : murs + toit à deux pans (ou toit plat). o : { x, z, w (long. du faîtage), d, h, yaw, wall, key, style, roof, rise, door } */
+/* Maison / chalet / hangar / église / magasin : kit commun assets/building-kit.js (fenêtres en relief, porte, volets, toit à deux pans
+   avec débords, gouttières et cheminée, ou toit-terrasse). o : { x, z, w (long. du faîtage), d, h, yaw, wall, key, style, roof, rise, door }.
+   La porte est sur la façade +d/2 ; une porte de plus de 2,5 m devient une porte de garage. Emprise de collision inchangée. */
+export const BK = BuildingKit(THREE);
+const kitMats = new Map();
+export function kitMaterials(o) {
+  const k = JSON.stringify(o);
+  if (!kitMats.has(k)) kitMats.set(k, BK.materials(o));
+  return kitMats.get(k);
+}
 export function house(scene, colliders, o) {
   const { x, z, w, d, h, yaw = 0, wall = '#d8cdb4', key = 'h', style = {}, roof = 'tile', rise = Math.min(d * 0.32, 3.4) } = o;
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw;
-  g.add(shade(new THREE.Mesh(facadeGeo(w, h, d).translate(0, h / 2, 0), mat(T.facade(wall, key, style), { bump: 0.5, rough: 0.85 }))));
-  if (roof === 'flat') g.add(shade(new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.4, d + 0.3).translate(0, h + 0.2, 0), mat(T.concrete(), { color: 0x8a8a86 }))));
-  else {
-    const half = d / 2 + 0.55, slope = Math.hypot(half, rise), ang = Math.atan2(rise, half), rm = roofMat(roof);
-    for (const s of [-1, 1]) {
-      const p = shade(new THREE.Mesh(scaleUV(new THREE.BoxGeometry(w + 0.9, 0.18, slope), Math.max(1, (w + 1) / 4), Math.max(1, slope / 3)), rm));
-      p.position.set(0, h + rise / 2 + 0.06, s * (half / 2 - 0.12)); p.rotation.x = s * ang; g.add(p);
-    }
-    const gb = new THREE.Shape(); gb.moveTo(-d / 2, 0); gb.lineTo(d / 2, 0); gb.lineTo(0, rise); gb.closePath();
-    for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.ShapeGeometry(gb), flat(new THREE.Color(wall).multiplyScalar(0.9), { side: THREE.DoubleSide })); m.rotation.y = s * Math.PI / 2; m.position.set(s * (w / 2 + 0.01), h, 0); g.add(m); }
-  }
-  if (o.door) { const m = new THREE.Mesh(new THREE.PlaneGeometry(o.door === true ? 1.1 : o.door, 2.2), flat(0x4a3322)); m.position.set(0, 1.1, d / 2 + 0.03); g.add(m); }
+  const st = style.logs ? 'logs' : style.wood ? 'wood' : style.stone ? 'stone' : style.brick ? 'brick' : 'stucco';
+  const church = key.startsWith('eg'), shop = roof === 'flat' && w > 30;
+  const mats = kitMaterials({ style: st, wall, roof: roof === 'flat' ? 'gravel' : roof === 'snow' ? 'slate' : roof, roofColor: roof === 'snow' ? '#eef2f8' : undefined, shutter: style.shutters, door: st === 'logs' ? '#5a3a22' : undefined });
+  const floors = Math.max(1, Math.round(h / 3)), door = o.door === true ? 1.1 : o.door || 0;
+  const acc = BK.acc();
+  BK.building(acc, {
+    w, d, h, fh: church ? h : h / floors, roof: roof === 'flat' ? 'flat' : 'gable', rise,
+    shutters: !!style.shutters && !church, quoins: st === 'stone', win: church ? [1.1, Math.min(3.4, h * 0.42)] : [1.1, Math.min(1.35, h / floors - 1.2)],
+    door: door && door <= 2.5 ? '+z' : false, doorW: door || undefined, doorType: door > 1.6 && !church ? 'block' : 'door',
+    openings: door > 2.5 ? [{ face: '+z', s: 0, w: door, h: Math.min(4.2, h - 1), type: 'garage' }] : [],
+    shop: shop ? ['+z'] : false, chimney: !church && roof !== 'tin', rand: Math.random,
+  });
+  const g = BK.group(acc.geometries(), mats); g.position.set(x, 0, z); g.rotation.y = yaw;
   scene.add(g); colliders.push(box(x, z, w / 2, d / 2, -yaw));
   return g;
 }

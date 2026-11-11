@@ -7,6 +7,7 @@ import { box, circle } from '../gameplay/collision.js';
 import { makeScene, pave, pad, boundary, distToPath } from './common.js';
 import { mat, flat, scatter, terrain, oakGeos, oakMats, bushGeos, bushMat, tuftGeo, tuftMat, rockGeos, rockMat, scaleUV, parkedCars } from './kit.js';
 import { T } from './textures.js';
+import { house } from './parts.js';
 
 const YARD = { x0: -20, x1: 30, z0: -16, z1: 16 };
 
@@ -43,20 +44,8 @@ export async function build({ renderer, level }) {
   pad(scene, YARD.x0, YARD.x1, YARD.z0, YARD.z1, T.gravel(), { tile: 6, y: 0.04, order: 3, color: 0xd8cdb8 });
 
   // grange, silo
-  const planks = mat(T.planks(), { rough: 0.9, bump: 2 }), tin = mat(T.roofTin(), { rough: 0.55, metal: 0.3 });
-  const BW = 16, BD = 10, BH = 5.2, bx = -12, bz = -20;
-  const barn = new THREE.Group(); barn.position.set(bx, 0, bz);
-  const wall = new THREE.Mesh(scaleUV(new THREE.BoxGeometry(BW, BH, BD).translate(0, BH / 2, 0), 3, 1.3), planks); wall.castShadow = wall.receiveShadow = true; barn.add(wall);
-  const rise = 3.6, slope = Math.hypot(BD / 2 + 0.6, rise), ang = Math.atan2(rise, BD / 2 + 0.6);
-  for (const s of [-1, 1]) {
-    const p = new THREE.Mesh(scaleUV(new THREE.BoxGeometry(BW + 1, 0.16, slope), 4, 2), tin);
-    p.position.set(0, BH + rise / 2 + 0.05, s * (BD / 4 + 0.3)); p.rotation.x = s * ang; p.castShadow = true; barn.add(p);
-  }
-  const gable = new THREE.Shape(); gable.moveTo(-BD / 2, 0); gable.lineTo(BD / 2, 0); gable.lineTo(0, rise); gable.closePath();
-  for (const s of [-1, 1]) { const g = new THREE.Mesh(new THREE.ShapeGeometry(gable), planks); g.rotation.y = s * Math.PI / 2; g.position.set(s * (BW / 2 + 0.01), BH, 0); barn.add(g); }
-  const door = new THREE.Mesh(new THREE.PlaneGeometry(6, 4.2), mat(T.wood(), { color: 0x6b3a2a })); door.position.set(0, 2.1, BD / 2 + 0.03); barn.add(door);
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.25, 0.2), flat(0xe8e0cf)); beam.position.set(0, 4.3, BD / 2 + 0.05); barn.add(beam);
-  scene.add(barn); colliders.push(box(bx, bz, BW / 2, BD / 2, 0));
+  // grange du kit commun : bardage bois, toit en tôle, porte de grange de 6 m, petites fenêtres
+  house(scene, colliders, { x: -12, z: -20, w: 16, d: 10, h: 5.2, wall: '#8a4b36', key: 'barn', style: { wood: true }, roof: 'tin', rise: 3.6, door: 6 });
   const silo = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 11, 20, 1), mat(T.metal(), { rough: 0.4, metal: 0.6 })); silo.position.set(-27, 5.5, -18); silo.castShadow = true; scene.add(silo);
   const dome = new THREE.Mesh(new THREE.SphereGeometry(2.4, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), flat(0xb9bec4, { metal: 0.6, rough: 0.4 })); dome.position.set(-27, 11, -18); scene.add(dome);
   colliders.push(circle(-27, -18, 2.45));
