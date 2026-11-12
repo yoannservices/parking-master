@@ -98,6 +98,7 @@ test/           logic.mjs, browser-check.js
 
 Résumé de ce que fait le code, tenu à jour à chaque modification : le lire suffit pour vérifier une information sans relire tout le jeu.
 
+- **Menu** (`src/ui/menus.js`, `title`) : bloc titre commun `hk-brief` dans une carte `hk-card` sur fond `hk-scrim`, onglets des 4 lieux, liste des niveaux, pied Réglages + commandes (`GameSettings.foot`).
 - **Voitures** : `assets/models/npc/car-*.glb` (compact, coupe, hatchback, minivan, offroad, pickup, sedan, sport, suv, wagon) chargées par `src/car/model.js`, roues par `rigWheels` ; piétons `proportional_low_poly_man__free_download.glb` (`src/world/npc.js`).
 - **Caméras (C, `src/camera/rig.js`)** : Poursuite (distance 7,4, hauteur 2,9, champ 62°), Proche (5,2 ; 1,7 ; 66°), Haute (9 ; 17 ; 55°).
 - **Sauvegarde** : `parkingmaster.save.v1`.

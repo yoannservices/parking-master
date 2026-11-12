@@ -18,9 +18,9 @@ export class Menus {
 
   title(tab) {
     this.tab = tab || this.tab || (this.g.level && this.g.level.chapter) || CHAPTERS[0];
-    const card = el('div', 'card');
-    card.append(el('div', 'eyebrow', 'JEU DE STATIONNEMENT'), el('h1', 'logo', 'Parking Master'),
-      el('p', 'lede', 'Suis les flèches au sol et gare-toi dans la place. À 10 km/h ou plus, un choc fait perdre le niveau ; en dessous, c’est un simple avertissement. Piétons et voitures circulent : attention à eux.'));
+    const card = el('div', 'card hk-card');
+    // bloc titre commun à tous les jeux (assets/game-menu.css : .hk-brief)
+    card.append(el('div', 'hk-brief', '<h1>Parking Master</h1><p>Suis les flèches au sol et gare-toi dans la place. À 10 km/h ou plus, un choc fait perdre le niveau ; en dessous, c’est un simple avertissement. Piétons et voitures circulent : attention à eux.</p>'));
     const tabs = el('div', 'tabs');
     for (const ch of CHAPTERS) {
       const t = el('button', 'tab' + (ch === this.tab ? ' on' : ''), `${ch} <small>${chapterStars(ch)}/15 ★</small>`);
@@ -39,7 +39,7 @@ export class Menus {
     });
     card.append(list);
     const ft = window.GameSettings?.foot(); if (ft) card.append(ft); // Réglages + commandes : même pied que les autres jeux
-    this.open(card);
+    this.open(card, 'hk-scrim');
   }
 
   pause() {
